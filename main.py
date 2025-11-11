@@ -22,7 +22,7 @@ from newton_raphson import newton_raphson
 from bultervolmerclassic import bultervolmerclassic
 from generate_bimodal_field import generate_bimodal_field
 from generate_channelized_field import generate_channelized_field
-from plot_functions import plot_potential_results, plot_sigma_kappa, plot_potential_results1
+from plot_functions import plot_sigma_kappa, plot_potential_results
 from line_search import update
 import os
 
@@ -333,8 +333,7 @@ print(f"[export] wrote {out_csv} with {len(x_m)} rows.")
 # ===============================================================
 
 
-#plot_potential_results(Lx, Ly, Nx, Ny, phi_e, phi_l, eta, jr)
-plot_potential_results1(Lx, Ly, Nx, Ny, phi_e, phi_l, eta, jr)
+plot_potential_results(Lx, Ly, Nx, Ny, phi_e, phi_l, eta, jr)
 print(j0)
 print(E_eq)
 print(J0)
