@@ -10,16 +10,21 @@ This script sets up the grid, physical parameters, conductivity fields
 (homogeneous/heterogeneous),boundary conditions, reference potential settings, 
 and then calls the solver. It also plots the results and saves selected data.
 
-"""
+Modified by Amirhossein Aghabarari November 2025
 
+"""
+import time
+start_time = time.perf_counter()
+
+NNN=31
 import numpy as np
 from newton_raphson import newton_raphson 
 from bultervolmerclassic import bultervolmerclassic
 from generate_bimodal_field import generate_bimodal_field
 from generate_channelized_field import generate_channelized_field
-from plot_functions import plot_potential_results, plot_sigma_kappa
+from plot_functions import plot_potential_results, plot_sigma_kappa, plot_potential_results1
 from line_search import update
-
+import os
 
 # ----------------------------
 # General Setup
@@ -28,12 +33,12 @@ homogeneous = True     # True: homogeneous; False: heterogeneous
 heterogeneous_type = "bimodal"  # Options: "bimodal" or "channelized"
 operating_mode = 1      # 1: Galvanostatic; 2: Potentiostatic sweeping; 3: Potentiostatic current sweeping
 reference_method = 2    # 1: LCM; 2: DSM; 3: No reference potential enforcement
-numerical_scheme = 1    # 1: Decoupled; 2: Fully-Coupled 
+numerical_scheme = 2    # 1: Decoupled; 2: Fully-Coupled 
 
 # ----------------------------
 # Grid Information
 # ----------------------------
-Nx, Ny, Nz = 5, 5, 1
+Nx, Ny, Nz = NNN, NNN, 1
 N = Nx * Ny * Nz
 Lx, Ly, Lz = 5.0e-3, 1.0e-1, 1.0e-1
 V = Lx * Ly * Lz
@@ -59,6 +64,10 @@ j0 = (F * k_rate) * (c3 ** 0.5) * (c2 ** 0.5)
 E_eq = E + (R_const * T / F) * np.log(c3 / c2)
 
 D23, c23, z23 = [D2, D3], [c2, c3], [2, 3]
+
+
+
+
 
 # ----------------------------
 # Conductivity Fields
@@ -279,7 +288,7 @@ else:
             res_totalcharge = None
         else:
             res_totalcharge = abs(charge_total - I) / I
-            
+        """   
         print("\n")
         print("-----------------------------------------------")
         print(f"| {'Total Newton-Raphson Iterations:':<35} | {iter_nr:<10d} |")
@@ -287,12 +296,45 @@ else:
         print(f"| {'Total Charge:':<35} | {charge_total:<10.3e} |")
         print(f"| {'Charge Balance Residual:':<35} | {res_totalcharge:<10.3e} |")
         print("-----------------------------------------------")
-        
+        """
 # ----------------------------
 # Plot Results
 # ----------------------------
+# ==== SAVE η(x) AT y = H/2 ======================================
+# Requires: Nx, Ny, Lx, and the 2D array 'eta' already defined.
+# 'eta' is created by: aj, jr, eta = bultervolmerclassic(phi_e, phi_l, c3, c2)
 
-plot_potential_results(Lx, Ly, Nx, Ny, phi_e, phi_l, eta, jr)
+end_time = time.perf_counter()
+elapsed_time = end_time - start_time
+print(f"Execution time: {elapsed_time:.6f} seconds")
 
-    
-    
+
+# x-coordinates in meters (Nx nodes from 0 to Lx)
+x_m = np.linspace(0.0, Lx, Nx)
+
+# pick the mid-height line (y = H/2); if Ny is even, average the two middle rows
+if Ny % 2 == 1:
+    jmid = Ny // 2
+    eta_line = eta[jmid, :]           # shape: (Nx,)
+else:
+    jlo, jhi = Ny // 2 - 1, Ny // 2
+    eta_line = 0.5 * (eta[jlo, :] + eta[jhi, :])
+
+# save to CSV
+os.makedirs("exports", exist_ok=True)
+out_csv = os.path.join("exports", f"Wang_eta_vs_x_yH2_{NNN}Res.csv")
+np.savetxt(
+    out_csv,
+    np.column_stack([x_m, eta_line]),
+    delimiter=",",
+    header="x_m,eta_V", comments="", fmt="%.10e"
+)
+print(f"[export] wrote {out_csv} with {len(x_m)} rows.")
+# ===============================================================
+
+
+#plot_potential_results(Lx, Ly, Nx, Ny, phi_e, phi_l, eta, jr)
+plot_potential_results1(Lx, Ly, Nx, Ny, phi_e, phi_l, eta, jr)
+print(j0)
+print(E_eq)
+print(J0)
